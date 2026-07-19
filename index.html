@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#d52455">
+    <meta name="description" content="Enter the James Cafe coffee giveaway at AI Dev Day and watch your name join the capsule machine.">
+    <meta name="github-repo" content="jamont3089/AIDevDayCapsuleToys">
+    <meta property="og:title" content="James Cafe Coffee Gacha">
+    <meta property="og:description" content="One tiny capsule. One seriously good bag of coffee. Enter at AI Dev Day.">
+    <meta property="og:type" content="website">
+    <title>James Cafe Coffee Gacha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content" data-i18n="skip">Skip to main content</a>
+
+    <header class="site-header" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="James Cafe home">
+        <svg class="brand-mark" viewBox="0 0 44 44" aria-hidden="true">
+          <path d="M12 7h20l-2 31H14L12 7Z" fill="currentColor"/>
+          <path d="M9 7h26v6H9z" fill="currentColor"/>
+          <path d="M17 18c6-6 13 0 8 5-4 4-10 1-8-5Z" fill="white"/>
+        </svg>
+        <span>JAMES<br>CAFE</span>
+      </a>
+
+      <div class="header-actions">
+        <a class="event-link" href="https://www.aidevday.com" target="_blank" rel="noreferrer">
+          <span>AI DEV DAY</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3h8v8M13 3 3 13"/></svg>
+        </a>
+        <div class="language-switch" role="group" aria-label="Language">
+          <button type="button" data-language="en" aria-pressed="true">EN</button>
+          <button type="button" data-language="ja" aria-pressed="false">日本語</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="booth-stamp">
+            <span aria-hidden="true">●</span>
+            <span data-i18n="booth">LIVE AT JAMES CAFE · AI DEV DAY</span>
+          </p>
+          <h1 id="hero-title">
+            <span data-i18n="heroLine1">YOUR NAME.</span>
+            <span class="hero-accent" data-i18n="heroLine2">ONE CAPSULE.</span>
+            <span data-i18n="heroLine3">VERY GOOD COFFEE.</span>
+          </h1>
+          <p class="hero-lede" data-i18n="heroLede">James roasted the beans. The machine picks the winner. Add your name for a chance to take a bag home.</p>
+
+          <form class="entry-form" id="entry-form" novalidate>
+            <label for="entrant-name" data-i18n="nameLabel">Your name</label>
+            <div class="entry-row">
+              <input
+                id="entrant-name"
+                name="name"
+                type="text"
+                minlength="2"
+                maxlength="60"
+                autocomplete="name"
+                aria-describedby="name-help name-error"
+                data-i18n-placeholder="namePlaceholder"
+                placeholder="Ada Lovelace"
+                required
+              >
+              <button class="primary-button" type="submit">
+                <span data-i18n="enterButton">GET A CAPSULE</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+              </button>
+            </div>
+            <p class="field-help" id="name-help" data-i18n="nameHelp">Opens GitHub to record one public entry. No email or phone number needed.</p>
+            <p class="field-error" id="name-error" role="alert"></p>
+          </form>
+
+          <div class="entry-confirm" id="entry-confirm" hidden>
+            <div>
+              <strong data-i18n="finishTitle">Finish on GitHub</strong>
+              <p data-i18n="finishBody">Create the prefilled issue, then come back and refresh the machine.</p>
+            </div>
+            <button class="text-button" id="refresh-entries" type="button">
+              <span data-i18n="refreshButton">I’M IN — REFRESH</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="machine-stage" aria-label="Capsule machine showing giveaway entries" data-i18n-aria="machineLabel">
+          <div class="burst burst-one" aria-hidden="true">COFFEE!</div>
+          <div class="burst burst-two" aria-hidden="true">当たる!</div>
+
+          <div class="machine" id="machine">
+            <div class="machine-top">
+              <div class="machine-sign">
+                <span>JAMES CAFE</span>
+                <strong>COFFEE<br>GACHA</strong>
+                <small>珈琲 ガチャ</small>
+              </div>
+
+              <div class="machine-window">
+                <div class="window-glare" aria-hidden="true"></div>
+                <div class="capsule-chamber" id="capsule-chamber" aria-hidden="true">
+                  <div class="capsule capsule-placeholder c1"><span>J</span></div>
+                  <div class="capsule capsule-placeholder c2"><span>C</span></div>
+                  <div class="capsule capsule-placeholder c3"><span>★</span></div>
+                  <div class="capsule capsule-placeholder c4"><span>AI</span></div>
+                  <div class="capsule capsule-placeholder c5"><span>☕</span></div>
+                </div>
+                <div class="machine-count">
+                  <span id="entry-count">—</span>
+                  <small data-i18n="capsules">CAPSULES</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="machine-console">
+              <div class="price-window">
+                <span data-i18n="priceLabel">TODAY</span>
+                <strong data-i18n="priceValue">FREE</strong>
+              </div>
+              <div class="knob-assembly" aria-hidden="true">
+                <span class="knob-label">まわす</span>
+                <div class="knob"><div class="knob-grip"></div></div>
+                <span class="knob-arrow">↻</span>
+              </div>
+              <button class="host-trigger" id="host-trigger" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m6.4-.4-2.1 2.1M21 12h-3M5.6 5.6l2.1 2.1M3 12h3m6 9v-3m6.4.4-2.1-2.1M5.6 18.4l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg>
+                <span data-i18n="hostButton">HOST DRAW</span>
+              </button>
+            </div>
+
+            <div class="machine-chute">
+              <div class="chute-door">
+                <span data-i18n="prizeExit">PRIZE EXIT</span>
+                <div class="winner-capsule" id="winner-capsule" aria-hidden="true"></div>
+              </div>
+              <div class="coffee-bag" aria-hidden="true">
+                <div class="bag-seal"></div>
+                <div class="bag-label">
+                  <span>JAMES CAFE</span>
+                  <strong>AI DEV<br>DAY ROAST</strong>
+                  <small>ROASTED BY JAMES</small>
+                </div>
+              </div>
+            </div>
+            <div class="machine-feet" aria-hidden="true"><span></span><span></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-band" aria-labelledby="status-title">
+        <div class="status-light" id="status-light" aria-hidden="true"></div>
+        <div>
+          <h2 id="status-title" data-i18n="statusTitle">MACHINE STATUS</h2>
+          <p id="machine-status" role="status" aria-live="polite" data-i18n="statusLoading">Connecting to the GitHub entry ledger…</p>
+        </div>
+        <button class="status-refresh" id="status-refresh" type="button" aria-label="Refresh entries" data-i18n-aria="refreshAria">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+        </button>
+      </section>
+
+      <section class="how-it-works" aria-labelledby="how-title">
+        <div class="how-heading">
+          <p data-i18n="howIntro">THREE TURNS OF THE KNOB</p>
+          <h2 id="how-title" data-i18n="howTitle">HOW THE<br>MACHINE WORKS</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-number">1</span>
+            <div>
+              <h3 data-i18n="step1Title">NAME IT</h3>
+              <p data-i18n="step1Body">Type your name above. We’ll prepare a public GitHub Issue—our transparent entry ticket.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <div>
+              <h3 data-i18n="step2Title">CAPSULE IT</h3>
+              <p data-i18n="step2Body">Create the issue on GitHub. Your name appears in the machine when the entries refresh.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <div>
+              <h3 data-i18n="step3Title">DRAW IT</h3>
+              <p data-i18n="step3Body">At giveaway time, the host turns the digital knob and the machine chooses a name at random.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="roast-story" aria-labelledby="roast-title">
+        <div class="roast-graphic" aria-hidden="true">
+          <svg viewBox="0 0 480 400">
+            <path class="roast-shadow" d="M76 352c87-35 241-35 328 0-77 43-247 44-328 0Z"/>
+            <path class="roaster-body" d="M110 90h260v224c0 34-28 62-62 62H172c-34 0-62-28-62-62V90Z"/>
+            <path class="roaster-top" d="M92 90h296v54H92z"/>
+            <circle class="roaster-drum" cx="240" cy="227" r="90"/>
+            <path class="roaster-window" d="M175 191c31-54 111-61 145-7-21 61-111 85-145 7Z"/>
+            <path class="bean b1" d="M201 208c20-30 49 6 24 27-22 18-38-7-24-27Z"/>
+            <path class="bean-line" d="M207 210c7 10 13 16 18 23"/>
+            <path class="bean b2" d="M261 184c20-27 47 9 22 28-20 15-36-9-22-28Z"/>
+            <path class="bean-line" d="M268 187c4 8 9 15 15 22"/>
+            <circle class="roaster-knob" cx="145" cy="119" r="9"/>
+            <circle class="roaster-knob" cx="177" cy="119" r="9"/>
+            <path class="roaster-handle" d="M330 223h92v33h-92"/>
+            <path class="steam s1" d="M192 78c-18-23 17-29 0-55"/>
+            <path class="steam s2" d="M242 78c-18-23 17-29 0-55"/>
+            <path class="steam s3" d="M292 78c-18-23 17-29 0-55"/>
+          </svg>
+          <span class="roast-note">SMALL BATCH<br>大きな味</span>
+        </div>
+        <div class="roast-copy">
+          <p data-i18n="roastIntro">NOT JUST CONFERENCE COFFEE</p>
+          <h2 id="roast-title" data-i18n="roastTitle">ROASTED BY JAMES.<br>GIVEN AWAY WITH JOY.</h2>
+          <p data-i18n="roastBody">These aren’t promo bags with a logo slapped on. James roasted this coffee himself for the people building what’s next with AI.</p>
+          <dl>
+            <div>
+              <dt data-i18n="whereLabel">WHERE</dt>
+              <dd data-i18n="whereValue">James Cafe booth</dd>
+            </div>
+            <div>
+              <dt data-i18n="whenLabel">WHEN</dt>
+              <dd data-i18n="whenValue">AI Dev Day · July 19</dd>
+            </div>
+            <div>
+              <dt data-i18n="prizeLabel">PRIZE</dt>
+              <dd data-i18n="prizeValue">Fresh-roasted coffee</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-mark">
+        <span>JAMES CAFE</span>
+        <strong data-i18n="footerTagline">CODE. COFFEE. CAPSULES.</strong>
+      </div>
+      <p>
+        <span data-i18n="footerBuilt">Built for AI Dev Day with GitHub Pages + GitHub Issues.</span>
+        <a href="https://github.com/jamont3089/AIDevDayCapsuleToys" target="_blank" rel="noreferrer" data-i18n="viewSource">View the source</a>
+      </p>
+    </footer>
+
+    <dialog class="host-dialog" id="host-dialog" aria-labelledby="host-title">
+      <form method="dialog" class="dialog-close-form">
+        <button class="icon-button" aria-label="Close host controls" data-i18n-aria="closeHost">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </form>
+
+      <div class="host-header">
+        <p data-i18n="hostConsole">JAMES CAFE · HOST CONSOLE</p>
+        <h2 id="host-title" data-i18n="hostTitle">TURN THE KNOB</h2>
+        <p data-i18n="hostDescription">A winner is chosen locally from the GitHub entries loaded in this browser. Previous winners are skipped until you reset the draw.</p>
+      </div>
+
+      <div class="draw-display" id="draw-display">
+        <div class="draw-orbit" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <p data-i18n="readyLabel">READY TO DRAW</p>
+        <strong id="winner-name">—</strong>
+        <span id="draw-meta" data-i18n="readyMeta">Load entries, then make some coffee magic.</span>
+      </div>
+
+      <div class="draw-actions">
+        <button class="draw-button" id="draw-button" type="button">
+          <span data-i18n="drawButton">DRAW A WINNER</span>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3v5m9.2-1.2-3.6 3.6M29 16h-5M6.8 6.8l3.6 3.6M3 16h5m8 13v-5m9.2 1.2-3.6-3.6M6.8 25.2l3.6-3.6"/><circle cx="16" cy="16" r="6"/></svg>
+        </button>
+        <button class="secondary-button" id="copy-winner" type="button" disabled data-i18n="copyWinner">COPY WINNER</button>
+      </div>
+
+      <div class="winner-history">
+        <div class="history-heading">
+          <h3 data-i18n="historyTitle">WINNER HISTORY</h3>
+          <button class="text-button" id="reset-draw" type="button" data-i18n="resetDraw">RESET</button>
+        </div>
+        <ol id="winner-history-list">
+          <li class="empty-history" data-i18n="historyEmpty">No winners drawn on this device yet.</li>
+        </ol>
+      </div>
+      <p class="host-note" data-i18n="hostNote">Host controls are intentionally local: drawing here never edits, closes, or labels a GitHub Issue.</p>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

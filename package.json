@@ -1,0 +1,16 @@
+{
+  "name": "james-cafe-coffee-gacha",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/core.test.mjs",
+    "test:e2e": "playwright test",
+    "serve": "npx --yes serve . --listen 4173 --no-clipboard"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1"
+  }
+}
