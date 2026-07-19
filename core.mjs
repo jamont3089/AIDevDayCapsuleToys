@@ -20,6 +20,10 @@ export function createLocalEntry(name, id = crypto.randomUUID(), createdAt = new
   };
 }
 
+export function createDemoEntries(names, createdAt = new Date().toISOString()) {
+  return names.map((name, index) => createLocalEntry(name, `demo-${index + 1}`, createdAt));
+}
+
 export function availableEntries(entries, winnerHistory) {
   const won = new Set(winnerHistory.map((winner) => winner.id));
   return entries.filter((entry) => !won.has(entry.id));

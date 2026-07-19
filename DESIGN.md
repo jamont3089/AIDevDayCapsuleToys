@@ -45,7 +45,7 @@ Red belongs to the machine body and primary action. Acid-yellow marks physical c
 - **Capsule machine:** semantic HTML plus SVG/CSS illustration; the chamber is populated from live entry data.
 - **Entry control:** a clearly labeled name field that validates, saves locally, and drops a capsule into the machine immediately.
 - **Status strip:** communicates the locally saved entry count without requiring connectivity.
-- **Host console:** a native dialog with random draw, winner history, CSV backup, deliberate entry clearing, and copy controls.
+- **Host console:** a native dialog with random draw, winner history, CSV backup, deliberate entry clearing, copy controls, and a reversible memory-only demo pool that never touches real entries.
 - **Language switch:** a compact EN/日本語 segmented control that updates all interface strings and document metadata.
 
 ## Motion

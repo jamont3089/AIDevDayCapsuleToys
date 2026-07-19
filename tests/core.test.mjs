@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   availableEntries,
+  createDemoEntries,
   createLocalEntry,
   entriesToCsv,
   hasEntryName,
@@ -24,6 +25,16 @@ test("createLocalEntry creates a stable local record", () => {
     }
   );
   assert.throws(() => createLocalEntry("A"), RangeError);
+});
+
+test("createDemoEntries creates deterministic in-memory records", () => {
+  assert.deepEqual(
+    createDemoEntries(["Alex Chen", "Priya Shah"], "2026-07-19T14:00:00.000Z"),
+    [
+      { id: "demo-1", name: "Alex Chen", createdAt: "2026-07-19T14:00:00.000Z" },
+      { id: "demo-2", name: "Priya Shah", createdAt: "2026-07-19T14:00:00.000Z" }
+    ]
+  );
 });
 
 test("hasEntryName normalizes full-width and case variants", () => {

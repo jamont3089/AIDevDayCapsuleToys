@@ -77,6 +77,27 @@ test("draws one winner and prevents immediate repeats", async ({ page }) => {
   await expect(page.locator("#winner-history-list li")).toHaveCount(1);
 });
 
+test("loads demo entries in memory without changing saved entries", async ({ page }) => {
+  await seedEntries(page, [savedEntries[0]]);
+  await page.locator("#host-trigger").click();
+  await page.locator("#demo-mode").click();
+
+  await expect(page.locator("#entry-count")).toHaveText("24");
+  await expect(page.locator("#machine-status")).toContainText("DEMO MODE");
+  await expect(page.locator("#demo-mode")).toHaveText("EXIT DEMO");
+
+  const savedBeforeExit = await page.evaluate(() => JSON.parse(localStorage.getItem("james-cafe-entries")));
+  expect(savedBeforeExit).toEqual([savedEntries[0]]);
+
+  await page.locator("#draw-button").click();
+  await expect(page.locator("#winner-name")).not.toHaveText("••••••", { timeout: 3000 });
+  await page.locator("#demo-mode").click();
+
+  await expect(page.locator("#entry-count")).toHaveText("1");
+  await expect(page.locator("#capsule-chamber")).toContainText("Ada Lovelace");
+  await expect(page.locator("#winner-history-list")).toContainText("No winners drawn");
+});
+
 test("exports a CSV backup and requires confirmation to clear entries", async ({ page }) => {
   await seedEntries(page);
   await page.locator("#host-trigger").click();

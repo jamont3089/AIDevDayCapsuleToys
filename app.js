@@ -1,5 +1,6 @@
 import {
   availableEntries,
+  createDemoEntries,
   createLocalEntry,
   entriesToCsv,
   hasEntryName,
@@ -9,6 +10,32 @@ import {
 
 const ENTRY_STORAGE_KEY = "james-cafe-entries";
 const WINNER_STORAGE_KEY = "james-cafe-winners";
+const DEMO_NAMES = [
+  "Alex Chen",
+  "Priya Shah",
+  "Marcus Johnson",
+  "Yuki Tanaka",
+  "Sofia Martinez",
+  "Noah Williams",
+  "Amina Okafor",
+  "Leo Rossi",
+  "Maya Patel",
+  "Kenji Sato",
+  "Elena Garcia",
+  "Owen Murphy",
+  "Nora Ibrahim",
+  "Theo Martin",
+  "Mei Lin",
+  "Sam Rivera",
+  "Hana Suzuki",
+  "Jordan Lee",
+  "Amara Davis",
+  "Luca Bianchi",
+  "Rina Kobayashi",
+  "Mateo Silva",
+  "Zoe Anderson",
+  "Haruto Mori"
+];
 
 const translations = {
   en: {
@@ -78,12 +105,18 @@ const translations = {
     resetDraw: "RESET",
     historyEmpty: "No winners drawn on this device yet.",
     entryToolsTitle: "ENTRY BACKUP",
+    loadDemo: "LOAD DEMO",
+    exitDemo: "EXIT DEMO",
+    statusDemo: "DEMO MODE · {count} test entries in memory. Nothing is saved.",
+    demoLoaded: "Demo mode loaded with {count} test entries",
+    demoExited: "Demo mode closed. Saved entries restored.",
     exportEntries: "EXPORT CSV",
     clearEntries: "CLEAR ENTRIES",
     confirmClear: "CONFIRM CLEAR",
     exportEmpty: "Add at least one entry before exporting.",
     exportDone: "Entry backup downloaded",
     entriesCleared: "All entries and winner history cleared",
+    demoEntriesCleared: "Demo entries cleared. Saved entries are untouched.",
     hostNote: "Entries and winner history live only in this browser. Export a CSV backup before clearing browser data or moving devices.",
     resetDone: "Winner history reset",
     entrySaved: "Capsule saved"
@@ -155,12 +188,18 @@ const translations = {
     resetDraw: "リセット",
     historyEmpty: "この端末ではまだ抽選していません。",
     entryToolsTitle: "応募のバックアップ",
+    loadDemo: "デモを読み込む",
+    exitDemo: "デモを終了",
+    statusDemo: "デモモード · メモリ内に{count}件のテスト応募があります。保存はされません。",
+    demoLoaded: "{count}件のテスト応募でデモモードを開始しました",
+    demoExited: "デモモードを終了し、保存済みの応募に戻りました。",
     exportEntries: "CSVを書き出す",
     clearEntries: "応募を全削除",
     confirmClear: "本当に全削除",
     exportEmpty: "書き出す前に応募を1件以上追加してください。",
     exportDone: "応募のバックアップをダウンロードしました",
     entriesCleared: "すべての応募と当選履歴を削除しました",
+    demoEntriesCleared: "デモ応募を削除しました。保存済みの応募には影響ありません。",
     hostNote: "応募と当選履歴はこのブラウザだけに保存されます。ブラウザデータの削除や端末の変更前にCSVを書き出してください。",
     resetDone: "当選履歴をリセットしました",
     entrySaved: "カプセルを保存しました"
@@ -187,6 +226,7 @@ const elements = {
   copyWinner: document.querySelector("#copy-winner"),
   resetDraw: document.querySelector("#reset-draw"),
   historyList: document.querySelector("#winner-history-list"),
+  demoMode: document.querySelector("#demo-mode"),
   exportEntries: document.querySelector("#export-entries"),
   clearEntries: document.querySelector("#clear-entries"),
   winnerCapsule: document.querySelector("#winner-capsule"),
@@ -197,6 +237,8 @@ const state = {
   entries: readStoredArray(ENTRY_STORAGE_KEY, isValidEntry),
   language: localStorage.getItem("james-cafe-language") || (navigator.language.startsWith("ja") ? "ja" : "en"),
   winnerHistory: readStoredArray(WINNER_STORAGE_KEY, isValidEntry),
+  demoEntries: null,
+  demoWinnerHistory: [],
   currentWinner: null,
   clearArmed: false
 };
@@ -258,10 +300,23 @@ function saveHistory() {
   localStorage.setItem(WINNER_STORAGE_KEY, JSON.stringify(state.winnerHistory));
 }
 
+function activeEntries() {
+  return state.demoEntries ?? state.entries;
+}
+
+function activeWinnerHistory() {
+  return state.demoEntries ? state.demoWinnerHistory : state.winnerHistory;
+}
+
 function updateMachineStatus() {
-  const count = state.entries.length;
+  const entries = activeEntries();
+  const count = entries.length;
   elements.count.textContent = count.toLocaleString(state.language);
-  elements.statusLight.className = `status-light${count ? " ready" : ""}`;
+  elements.statusLight.className = `status-light${state.demoEntries ? " demo" : count ? " ready" : ""}`;
+  if (state.demoEntries) {
+    elements.status.textContent = t("statusDemo", { count: count.toLocaleString(state.language) });
+    return;
+  }
   elements.status.textContent = count
     ? t("statusReady", {
         count: count.toLocaleString(state.language),
@@ -272,7 +327,7 @@ function updateMachineStatus() {
 
 function renderCapsules() {
   elements.chamber.replaceChildren();
-  const visible = state.entries.slice(-12);
+  const visible = activeEntries().slice(-12);
   const source = visible.length ? visible : [
     { name: "J" },
     { name: "C" },
@@ -294,13 +349,16 @@ function renderCapsules() {
 }
 
 function updateDrawAvailability() {
-  const available = availableEntries(state.entries, state.winnerHistory);
+  const entries = activeEntries();
+  const available = availableEntries(entries, activeWinnerHistory());
   elements.drawButton.disabled = available.length === 0;
-  elements.exportEntries.disabled = state.entries.length === 0;
-  elements.clearEntries.disabled = state.entries.length === 0;
+  elements.exportEntries.disabled = entries.length === 0;
+  elements.clearEntries.disabled = entries.length === 0;
+  elements.demoMode.textContent = t(state.demoEntries ? "exitDemo" : "loadDemo");
+  elements.demoMode.classList.toggle("active", Boolean(state.demoEntries));
 
   if (state.currentWinner) return;
-  if (state.entries.length === 0) {
+  if (entries.length === 0) {
     elements.drawMeta.textContent = t("noEntriesMeta");
   } else if (available.length === 0) {
     elements.drawMeta.textContent = t("exhaustedMeta");
@@ -311,7 +369,8 @@ function updateDrawAvailability() {
 
 function renderHistory() {
   elements.historyList.replaceChildren();
-  if (state.winnerHistory.length === 0) {
+  const history = activeWinnerHistory();
+  if (history.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty-history";
     empty.textContent = t("historyEmpty");
@@ -319,7 +378,7 @@ function renderHistory() {
     return;
   }
 
-  state.winnerHistory.forEach((winner) => {
+  history.forEach((winner) => {
     const item = document.createElement("li");
     item.textContent = winner.name;
     elements.historyList.append(item);
@@ -327,7 +386,8 @@ function renderHistory() {
 }
 
 function addEntry(name) {
-  if (hasEntryName(state.entries, name)) {
+  const entries = activeEntries();
+  if (hasEntryName(entries, name)) {
     elements.name.setAttribute("aria-invalid", "true");
     elements.nameError.textContent = t("nameDuplicate");
     elements.name.focus();
@@ -335,9 +395,9 @@ function addEntry(name) {
   }
 
   const entry = createLocalEntry(name);
-  state.entries.push(entry);
-  if (!saveEntries()) {
-    state.entries.pop();
+  entries.push(entry);
+  if (!state.demoEntries && !saveEntries()) {
+    entries.pop();
     elements.name.setAttribute("aria-invalid", "true");
     elements.nameError.textContent = t("storageError");
     return;
@@ -354,7 +414,8 @@ function addEntry(name) {
 }
 
 async function drawWinner() {
-  const available = availableEntries(state.entries, state.winnerHistory);
+  const history = activeWinnerHistory();
+  const available = availableEntries(activeEntries(), history);
   if (!available.length) return;
 
   elements.drawButton.disabled = true;
@@ -371,8 +432,8 @@ async function drawWinner() {
 
   const winner = available[secureRandomIndex(available.length)];
   state.currentWinner = winner;
-  state.winnerHistory.unshift(winner);
-  saveHistory();
+  history.unshift(winner);
+  if (!state.demoEntries) saveHistory();
 
   elements.drawDisplay.classList.remove("drawing");
   elements.drawDisplay.classList.add("winner");
@@ -389,9 +450,13 @@ async function drawWinner() {
 }
 
 function resetDraw() {
-  state.winnerHistory = [];
+  if (state.demoEntries) {
+    state.demoWinnerHistory = [];
+  } else {
+    state.winnerHistory = [];
+    saveHistory();
+  }
   state.currentWinner = null;
-  saveHistory();
   elements.winnerName.textContent = "—";
   elements.drawDisplay.querySelector("p").textContent = t("readyLabel");
   elements.drawDisplay.classList.remove("winner", "drawing");
@@ -416,12 +481,13 @@ async function copyWinner() {
 }
 
 function exportEntries() {
-  if (!state.entries.length) {
+  const entries = activeEntries();
+  if (!entries.length) {
     showToast(t("exportEmpty"));
     return;
   }
 
-  const blob = new Blob([entriesToCsv(state.entries)], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob([entriesToCsv(entries)], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -443,11 +509,17 @@ function requestClearEntries() {
     return;
   }
 
-  state.entries = [];
-  state.winnerHistory = [];
+  const wasDemo = Boolean(state.demoEntries);
+  if (wasDemo) {
+    state.demoEntries = [];
+    state.demoWinnerHistory = [];
+  } else {
+    state.entries = [];
+    state.winnerHistory = [];
+    localStorage.removeItem(ENTRY_STORAGE_KEY);
+    localStorage.removeItem(WINNER_STORAGE_KEY);
+  }
   state.currentWinner = null;
-  localStorage.removeItem(ENTRY_STORAGE_KEY);
-  localStorage.removeItem(WINNER_STORAGE_KEY);
   elements.entryConfirm.hidden = true;
   elements.winnerName.textContent = "—";
   elements.copyWinner.disabled = true;
@@ -458,7 +530,31 @@ function requestClearEntries() {
   updateMachineStatus();
   updateDrawAvailability();
   resetClearConfirmation();
-  showToast(t("entriesCleared"));
+  showToast(t(wasDemo ? "demoEntriesCleared" : "entriesCleared"));
+}
+
+function toggleDemoMode() {
+  if (state.demoEntries) {
+    state.demoEntries = null;
+    state.demoWinnerHistory = [];
+    showToast(t("demoExited"));
+  } else {
+    state.demoEntries = createDemoEntries(DEMO_NAMES);
+    state.demoWinnerHistory = [];
+    showToast(t("demoLoaded", { count: DEMO_NAMES.length.toLocaleString(state.language) }));
+  }
+
+  state.currentWinner = null;
+  elements.entryConfirm.hidden = true;
+  elements.winnerName.textContent = "—";
+  elements.copyWinner.disabled = true;
+  elements.drawDisplay.querySelector("p").textContent = t("readyLabel");
+  elements.drawDisplay.classList.remove("winner", "drawing");
+  resetClearConfirmation();
+  renderCapsules();
+  renderHistory();
+  updateMachineStatus();
+  updateDrawAvailability();
 }
 
 function resetClearConfirmation() {
@@ -515,6 +611,7 @@ elements.hostTrigger.addEventListener("click", () => elements.hostDialog.showMod
 elements.drawButton.addEventListener("click", drawWinner);
 elements.copyWinner.addEventListener("click", copyWinner);
 elements.resetDraw.addEventListener("click", resetDraw);
+elements.demoMode.addEventListener("click", toggleDemoMode);
 elements.exportEntries.addEventListener("click", exportEntries);
 elements.clearEntries.addEventListener("click", requestClearEntries);
 
@@ -529,9 +626,11 @@ document.querySelectorAll("[data-language]").forEach((button) => {
 window.addEventListener("storage", (event) => {
   if (event.key === ENTRY_STORAGE_KEY) {
     state.entries = readStoredArray(ENTRY_STORAGE_KEY, isValidEntry);
-    renderCapsules();
-    updateMachineStatus();
-    updateDrawAvailability();
+    if (!state.demoEntries) {
+      renderCapsules();
+      updateMachineStatus();
+      updateDrawAvailability();
+    }
   }
 });
 

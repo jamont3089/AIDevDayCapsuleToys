@@ -27,6 +27,7 @@ Avoid generic event landing pages, startup gradients, casino or gambling aesthet
 - Reward participation immediately: a submitted name becomes a capsule visitors can see.
 - Work from the show floor outward: prioritize fast phone use, strong contrast, large touch targets, and resilient loading.
 - Let bilingual copy feel native: English and Japanese receive equal hierarchy rather than treating Japanese as decoration.
+- Keep rehearsals harmless: demo entries and demo winners exist only in memory and never mix with the saved giveaway pool.
 
 ## Accessibility & Inclusion
 
