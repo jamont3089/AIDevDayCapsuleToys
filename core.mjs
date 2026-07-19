@@ -1,39 +1,23 @@
-const ENTRY_PREFIX = "[Coffee Entry]";
-
-export function parseEntry(issue) {
-  if (!issue || issue.pull_request) return null;
-
-  const title = String(issue.title || "").trim();
-  if (!title.toLowerCase().startsWith(ENTRY_PREFIX.toLowerCase())) return null;
-
-  let name = title.slice(ENTRY_PREFIX.length).replace(/^[:\s-]+/, "").trim();
-
-  if (!name && issue.body) {
-    const match = String(issue.body).match(/###\s*(?:Your name|Name|お名前)\s*\r?\n+([^\r\n]+)/i);
-    name = match?.[1]?.trim() || "";
-  }
-
-  name = name.replace(/\s+/g, " ").slice(0, 60);
-  if (name.length < 2) return null;
-
-  return {
-    id: Number(issue.id),
-    number: Number(issue.number),
-    name,
-    url: String(issue.html_url || ""),
-    createdAt: String(issue.created_at || "")
-  };
+export function normalizeName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, 60);
 }
 
-export function dedupeEntries(entries) {
-  const seen = new Set();
-  return entries.filter((entry) => {
-    if (!entry) return false;
-    const key = entry.name.normalize("NFKC").toLocaleLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+export function hasEntryName(entries, name) {
+  const key = normalizeName(name).normalize("NFKC").toLocaleLowerCase();
+  return entries.some((entry) => normalizeName(entry.name).normalize("NFKC").toLocaleLowerCase() === key);
+}
+
+export function createLocalEntry(name, id = crypto.randomUUID(), createdAt = new Date().toISOString()) {
+  const normalizedName = normalizeName(name);
+  if (normalizedName.length < 2) {
+    throw new RangeError("name must contain at least 2 characters");
+  }
+
+  return {
+    id,
+    name: normalizedName,
+    createdAt
+  };
 }
 
 export function availableEntries(entries, winnerHistory) {
@@ -57,10 +41,11 @@ export function secureRandomIndex(length, getRandomValues = crypto.getRandomValu
   return values[0] % length;
 }
 
-export function makeIssueUrl(repo, name) {
-  const params = new URLSearchParams({
-    template: "coffee-entry.yml",
-    title: `${ENTRY_PREFIX} ${name}`
-  });
-  return `https://github.com/${repo}/issues/new?${params.toString()}`;
+export function entriesToCsv(entries) {
+  const escapeCell = (value) => `"${String(value).replaceAll('"', '""')}"`;
+  const rows = entries.map((entry) => [
+    escapeCell(entry.name),
+    escapeCell(entry.createdAt)
+  ].join(","));
+  return `\uFEFFName,Entered at\n${rows.join("\n")}\n`;
 }

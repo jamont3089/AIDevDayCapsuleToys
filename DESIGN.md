@@ -43,9 +43,9 @@ Red belongs to the machine body and primary action. Acid-yellow marks physical c
 ## Components
 
 - **Capsule machine:** semantic HTML plus SVG/CSS illustration; the chamber is populated from live entry data.
-- **Entry control:** a clearly labeled name field that opens a prefilled GitHub Issue after validation.
-- **Status strip:** communicates GitHub API loading, entry count, and failures in text and iconography.
-- **Host console:** a native dialog with random draw, winner history, redraw, and copy controls. Draws are local and do not alter GitHub.
+- **Entry control:** a clearly labeled name field that validates, saves locally, and drops a capsule into the machine immediately.
+- **Status strip:** communicates the locally saved entry count without requiring connectivity.
+- **Host console:** a native dialog with random draw, winner history, CSV backup, deliberate entry clearing, and copy controls.
 - **Language switch:** a compact EN/日本語 segmented control that updates all interface strings and document metadata.
 
 ## Motion

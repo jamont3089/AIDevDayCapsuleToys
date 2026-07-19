@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#d52455">
-    <meta name="description" content="Enter the James Cafe coffee giveaway at AI Dev Day and watch your name join the capsule machine.">
+    <meta name="description" content="Enter the James Cafe coffee giveaway instantly at the booth and watch your name join the capsule machine.">
     <meta name="github-repo" content="jamont3089/AIDevDayCapsuleToys">
     <meta property="og:title" content="James Cafe Coffee Gacha">
     <meta property="og:description" content="One tiny capsule. One seriously good bag of coffee. Enter at AI Dev Day.">
@@ -75,18 +75,18 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
               </button>
             </div>
-            <p class="field-help" id="name-help" data-i18n="nameHelp">Opens GitHub to record one public entry. No email or phone number needed.</p>
+            <p class="field-help" id="name-help" data-i18n="nameHelp">Your entry stays safely on this booth device. No account, email, or phone number needed.</p>
             <p class="field-error" id="name-error" role="alert"></p>
           </form>
 
           <div class="entry-confirm" id="entry-confirm" hidden>
             <div>
-              <strong data-i18n="finishTitle">Finish on GitHub</strong>
-              <p data-i18n="finishBody">Create the prefilled issue, then come back and refresh the machine.</p>
+              <strong data-i18n="finishTitle">Capsule accepted!</strong>
+              <p data-i18n="finishBody">Your name is saved on this device and is now inside the machine.</p>
             </div>
-            <button class="text-button" id="refresh-entries" type="button">
-              <span data-i18n="refreshButton">I’M IN — REFRESH</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+            <button class="text-button" id="add-another" type="button">
+              <span data-i18n="addAnotherButton">ADD ANOTHER NAME</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             </button>
           </div>
         </div>
@@ -158,11 +158,8 @@
         <div class="status-light" id="status-light" aria-hidden="true"></div>
         <div>
           <h2 id="status-title" data-i18n="statusTitle">MACHINE STATUS</h2>
-          <p id="machine-status" role="status" aria-live="polite" data-i18n="statusLoading">Connecting to the GitHub entry ledger…</p>
+          <p id="machine-status" role="status" aria-live="polite" data-i18n="statusEmpty">No entries yet. Be the first name in the machine.</p>
         </div>
-        <button class="status-refresh" id="status-refresh" type="button" aria-label="Refresh entries" data-i18n-aria="refreshAria">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
-        </button>
       </section>
 
       <section class="how-it-works" aria-labelledby="how-title">
@@ -175,21 +172,21 @@
             <span class="step-number">1</span>
             <div>
               <h3 data-i18n="step1Title">NAME IT</h3>
-              <p data-i18n="step1Body">Type your name above. We’ll prepare a public GitHub Issue—our transparent entry ticket.</p>
+              <p data-i18n="step1Body">Type your name at the booth. No sign-in or personal contact details are needed.</p>
             </div>
           </li>
           <li>
             <span class="step-number">2</span>
             <div>
               <h3 data-i18n="step2Title">CAPSULE IT</h3>
-              <p data-i18n="step2Body">Create the issue on GitHub. Your name appears in the machine when the entries refresh.</p>
+              <p data-i18n="step2Body">Your entry is saved instantly on this device and drops straight into the machine.</p>
             </div>
           </li>
           <li>
             <span class="step-number">3</span>
             <div>
               <h3 data-i18n="step3Title">DRAW IT</h3>
-              <p data-i18n="step3Body">At giveaway time, the host turns the digital knob and the machine chooses a name at random.</p>
+              <p data-i18n="step3Body">At giveaway time, the host turns the digital knob and the machine chooses a saved name at random.</p>
             </div>
           </li>
         </ol>
@@ -244,7 +241,7 @@
         <strong data-i18n="footerTagline">CODE. COFFEE. CAPSULES.</strong>
       </div>
       <p>
-        <span data-i18n="footerBuilt">Built for AI Dev Day with GitHub Pages + GitHub Issues.</span>
+        <span data-i18n="footerBuilt">Built for AI Dev Day with GitHub Pages. Entries stay on this booth device.</span>
         <a href="https://github.com/jamont3089/AIDevDayCapsuleToys" target="_blank" rel="noreferrer" data-i18n="viewSource">View the source</a>
       </p>
     </footer>
@@ -259,7 +256,7 @@
       <div class="host-header">
         <p data-i18n="hostConsole">JAMES CAFE · HOST CONSOLE</p>
         <h2 id="host-title" data-i18n="hostTitle">TURN THE KNOB</h2>
-        <p data-i18n="hostDescription">A winner is chosen locally from the GitHub entries loaded in this browser. Previous winners are skipped until you reset the draw.</p>
+        <p data-i18n="hostDescription">A winner is chosen locally from entries saved on this booth device. Previous winners are skipped until you reset the draw.</p>
       </div>
 
       <div class="draw-display" id="draw-display">
@@ -288,7 +285,14 @@
           <li class="empty-history" data-i18n="historyEmpty">No winners drawn on this device yet.</li>
         </ol>
       </div>
-      <p class="host-note" data-i18n="hostNote">Host controls are intentionally local: drawing here never edits, closes, or labels a GitHub Issue.</p>
+      <div class="entry-tools">
+        <h3 data-i18n="entryToolsTitle">ENTRY BACKUP</h3>
+        <div>
+          <button class="secondary-button" id="export-entries" type="button" data-i18n="exportEntries">EXPORT CSV</button>
+          <button class="danger-button" id="clear-entries" type="button" data-i18n="clearEntries">CLEAR ENTRIES</button>
+        </div>
+      </div>
+      <p class="host-note" data-i18n="hostNote">Entries and winner history live only in this browser. Export a CSV backup before clearing browser data or moving devices.</p>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

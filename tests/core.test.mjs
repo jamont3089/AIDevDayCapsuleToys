@@ -2,58 +2,39 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   availableEntries,
-  dedupeEntries,
-  makeIssueUrl,
-  parseEntry,
+  createLocalEntry,
+  entriesToCsv,
+  hasEntryName,
+  normalizeName,
   secureRandomIndex
 } from "../core.mjs";
 
-test("parseEntry accepts valid issue titles", () => {
+test("normalizeName trims, collapses whitespace, and limits length", () => {
+  assert.equal(normalizeName("  Ada   Lovelace  "), "Ada Lovelace");
+  assert.equal(normalizeName("A".repeat(80)).length, 60);
+});
+
+test("createLocalEntry creates a stable local record", () => {
   assert.deepEqual(
-    parseEntry({
-      id: 11,
-      number: 3,
-      title: "[Coffee Entry]  Ada Lovelace ",
-      html_url: "https://github.com/example/repo/issues/3",
-      created_at: "2026-07-19T00:00:00Z"
-    }),
+    createLocalEntry(" Grace Hopper ", "entry-1", "2026-07-19T14:00:00.000Z"),
     {
-      id: 11,
-      number: 3,
-      name: "Ada Lovelace",
-      url: "https://github.com/example/repo/issues/3",
-      createdAt: "2026-07-19T00:00:00Z"
+      id: "entry-1",
+      name: "Grace Hopper",
+      createdAt: "2026-07-19T14:00:00.000Z"
     }
   );
+  assert.throws(() => createLocalEntry("A"), RangeError);
 });
 
-test("parseEntry ignores pull requests and unrelated issues", () => {
-  assert.equal(parseEntry({ title: "[Coffee Entry] Ada", pull_request: {} }), null);
-  assert.equal(parseEntry({ title: "Fix capsule animation" }), null);
+test("hasEntryName normalizes full-width and case variants", () => {
+  const entries = [{ id: "1", name: "Ada" }];
+  assert.equal(hasEntryName(entries, "Ａｄａ"), true);
+  assert.equal(hasEntryName(entries, "Grace"), false);
 });
 
-test("parseEntry falls back to issue form body", () => {
-  const entry = parseEntry({
-    id: 12,
-    number: 4,
-    title: "[Coffee Entry]",
-    body: "### Your name\n\nGrace Hopper\n\n### Agreement\n\nYes"
-  });
-  assert.equal(entry.name, "Grace Hopper");
-});
-
-test("dedupeEntries normalizes names case-insensitively", () => {
-  const entries = [
-    { id: 1, name: "Ada" },
-    { id: 2, name: "Ａｄａ" },
-    { id: 3, name: "Grace" }
-  ];
-  assert.deepEqual(dedupeEntries(entries).map((entry) => entry.id), [1, 3]);
-});
-
-test("availableEntries skips prior winners by issue id", () => {
-  const entries = [{ id: 1, name: "Ada" }, { id: 2, name: "Grace" }];
-  assert.deepEqual(availableEntries(entries, [{ id: 1, name: "Ada" }]), [{ id: 2, name: "Grace" }]);
+test("availableEntries skips prior winners by local entry id", () => {
+  const entries = [{ id: "1", name: "Ada" }, { id: "2", name: "Grace" }];
+  assert.deepEqual(availableEntries(entries, [{ id: "1", name: "Ada" }]), [{ id: "2", name: "Grace" }]);
 });
 
 test("secureRandomIndex uses unbiased values in range", () => {
@@ -65,9 +46,9 @@ test("secureRandomIndex uses unbiased values in range", () => {
   assert.throws(() => secureRandomIndex(0), RangeError);
 });
 
-test("makeIssueUrl preselects the template and encoded title", () => {
-  const url = new URL(makeIssueUrl("owner/repo", "山田 太郎"));
-  assert.equal(url.pathname, "/owner/repo/issues/new");
-  assert.equal(url.searchParams.get("template"), "coffee-entry.yml");
-  assert.equal(url.searchParams.get("title"), "[Coffee Entry] 山田 太郎");
+test("entriesToCsv escapes spreadsheet values and includes timestamps", () => {
+  const csv = entriesToCsv([
+    { id: "1", name: "Ada, \"Countess\"", createdAt: "2026-07-19T14:00:00.000Z" }
+  ]);
+  assert.equal(csv, "\uFEFFName,Entered at\n\"Ada, \"\"Countess\"\"\",\"2026-07-19T14:00:00.000Z\"\n");
 });

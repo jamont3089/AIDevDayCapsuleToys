@@ -1,10 +1,14 @@
 import {
   availableEntries,
-  dedupeEntries,
-  makeIssueUrl,
-  parseEntry,
+  createLocalEntry,
+  entriesToCsv,
+  hasEntryName,
+  normalizeName,
   secureRandomIndex
 } from "./core.mjs";
+
+const ENTRY_STORAGE_KEY = "james-cafe-entries";
+const WINNER_STORAGE_KEY = "james-cafe-winners";
 
 const translations = {
   en: {
@@ -16,34 +20,33 @@ const translations = {
     heroLede: "James roasted the beans. The machine picks the winner. Add your name for a chance to take a bag home.",
     nameLabel: "Your name",
     namePlaceholder: "Ada Lovelace",
-    nameHelp: "Opens GitHub to record one public entry. No email or phone number needed.",
+    nameHelp: "Your entry stays safely on this booth device. No account, email, or phone number needed.",
     enterButton: "GET A CAPSULE",
     nameTooShort: "Enter at least 2 characters so we know what to call you.",
-    finishTitle: "Finish on GitHub",
-    finishBody: "Create the prefilled issue, then come back and refresh the machine.",
-    refreshButton: "I’M IN — REFRESH",
-    machineLabel: "Capsule machine showing giveaway entries",
+    nameDuplicate: "That name already has a capsule. Add a last initial if this is someone else.",
+    storageError: "This browser couldn’t save the entry. Ask the booth host to check private-browsing settings.",
+    finishTitle: "Capsule accepted!",
+    finishBody: "Your name is saved on this device and is now inside the machine.",
+    addAnotherButton: "ADD ANOTHER NAME",
+    machineLabel: "Capsule machine showing locally saved giveaway entries",
     capsules: "CAPSULES",
     priceLabel: "TODAY",
     priceValue: "FREE",
     hostButton: "HOST DRAW",
     prizeExit: "PRIZE EXIT",
     statusTitle: "MACHINE STATUS",
-    statusLoading: "Connecting to the GitHub entry ledger…",
-    statusReady: "{count} valid {entryWord} loaded. The machine is ready.",
+    statusReady: "{count} saved {entryWord} in the machine. Ready to draw.",
     statusEmpty: "No entries yet. Be the first name in the machine.",
-    statusError: "The GitHub ledger couldn’t load. Check your connection, then refresh.",
     entrySingular: "entry",
     entryPlural: "entries",
-    refreshAria: "Refresh entries",
     howIntro: "THREE TURNS OF THE KNOB",
     howTitle: "HOW THE\nMACHINE WORKS",
     step1Title: "NAME IT",
-    step1Body: "Type your name above. We’ll prepare a public GitHub Issue—our transparent entry ticket.",
+    step1Body: "Type your name at the booth. No sign-in or personal contact details are needed.",
     step2Title: "CAPSULE IT",
-    step2Body: "Create the issue on GitHub. Your name appears in the machine when the entries refresh.",
+    step2Body: "Your entry is saved instantly on this device and drops straight into the machine.",
     step3Title: "DRAW IT",
-    step3Body: "At giveaway time, the host turns the digital knob and the machine chooses a name at random.",
+    step3Body: "At giveaway time, the host turns the digital knob and the machine chooses a saved name at random.",
     roastIntro: "NOT JUST CONFERENCE COFFEE",
     roastTitle: "ROASTED BY JAMES.\nGIVEN AWAY WITH JOY.",
     roastBody: "These aren’t promo bags with a logo slapped on. James roasted this coffee himself for the people building what’s next with AI.",
@@ -54,18 +57,18 @@ const translations = {
     prizeLabel: "PRIZE",
     prizeValue: "Fresh-roasted coffee",
     footerTagline: "CODE. COFFEE. CAPSULES.",
-    footerBuilt: "Built for AI Dev Day with GitHub Pages + GitHub Issues.",
+    footerBuilt: "Built for AI Dev Day with GitHub Pages. Entries stay on this booth device.",
     viewSource: "View the source",
     closeHost: "Close host controls",
     hostConsole: "JAMES CAFE · HOST CONSOLE",
     hostTitle: "TURN THE KNOB",
-    hostDescription: "A winner is chosen locally from the GitHub entries loaded in this browser. Previous winners are skipped until you reset the draw.",
+    hostDescription: "A winner is chosen locally from entries saved on this booth device. Previous winners are skipped until you reset the draw.",
     readyLabel: "READY TO DRAW",
-    readyMeta: "Load entries, then make some coffee magic.",
-    noEntriesMeta: "No valid entries are loaded yet.",
-    exhaustedMeta: "Every loaded entry has won. Reset the history to draw again.",
+    readyMeta: "Add entries, then make some coffee magic.",
+    noEntriesMeta: "No saved entries yet.",
+    exhaustedMeta: "Every saved entry has won. Reset the history to draw again.",
     drawingLabel: "CAPSULES ARE MIXING",
-    drawingMeta: "Randomizing the loaded entries…",
+    drawingMeta: "Randomizing the saved entries…",
     winnerLabel: "WE HAVE A WINNER",
     winnerMeta: "Fresh coffee has found a new home.",
     drawButton: "DRAW A WINNER",
@@ -74,9 +77,16 @@ const translations = {
     historyTitle: "WINNER HISTORY",
     resetDraw: "RESET",
     historyEmpty: "No winners drawn on this device yet.",
-    hostNote: "Host controls are intentionally local: drawing here never edits, closes, or labels a GitHub Issue.",
+    entryToolsTitle: "ENTRY BACKUP",
+    exportEntries: "EXPORT CSV",
+    clearEntries: "CLEAR ENTRIES",
+    confirmClear: "CONFIRM CLEAR",
+    exportEmpty: "Add at least one entry before exporting.",
+    exportDone: "Entry backup downloaded",
+    entriesCleared: "All entries and winner history cleared",
+    hostNote: "Entries and winner history live only in this browser. Export a CSV backup before clearing browser data or moving devices.",
     resetDone: "Winner history reset",
-    entriesRefreshed: "Capsules refreshed"
+    entrySaved: "Capsule saved"
   },
   ja: {
     skip: "メインコンテンツへ移動",
@@ -87,34 +97,33 @@ const translations = {
     heroLede: "豆を焙煎したのはジェームズ。当選者を選ぶのはマシン。名前を入れて、コーヒーバッグを当てよう。",
     nameLabel: "お名前",
     namePlaceholder: "山田 太郎",
-    nameHelp: "GitHubで公開エントリーを1件作成します。メールアドレスや電話番号は不要です。",
+    nameHelp: "応募はこのブースの端末だけに安全に保存されます。アカウント、メール、電話番号は不要です。",
     enterButton: "カプセルをゲット",
     nameTooShort: "お呼びできるよう、2文字以上でお名前を入力してください。",
-    finishTitle: "GitHubでエントリー完了",
-    finishBody: "入力済みのIssueを作成したら、このページに戻ってマシンを更新してください。",
-    refreshButton: "エントリー済み — 更新",
-    machineLabel: "プレゼント応募者のカプセルが入ったマシン",
+    nameDuplicate: "そのお名前のカプセルはすでにあります。別の方なら名字の頭文字などを追加してください。",
+    storageError: "このブラウザに応募を保存できませんでした。プライベートブラウズ設定をホストに確認してください。",
+    finishTitle: "カプセルを受け付けました！",
+    finishBody: "お名前をこの端末に保存し、マシンの中に入れました。",
+    addAnotherButton: "別の名前を追加",
+    machineLabel: "この端末に保存した応募者のカプセルが入ったマシン",
     capsules: "カプセル",
     priceLabel: "本日",
     priceValue: "無料",
     hostButton: "抽選する",
     prizeExit: "取り出し口",
     statusTitle: "マシンの状態",
-    statusLoading: "GitHubのエントリー台帳に接続しています…",
-    statusReady: "{count}件のエントリーを読み込みました。抽選できます。",
-    statusEmpty: "まだエントリーはありません。最初のカプセルを入れよう。",
-    statusError: "GitHubの台帳を読み込めませんでした。接続を確認して更新してください。",
+    statusReady: "{count}件の応募をこのマシンに保存しました。抽選できます。",
+    statusEmpty: "まだ応募はありません。最初のカプセルを入れよう。",
     entrySingular: "entry",
     entryPlural: "entries",
-    refreshAria: "エントリーを更新",
     howIntro: "ノブを回す3つのステップ",
     howTitle: "このマシンの\n遊び方",
     step1Title: "名前を入れる",
-    step1Body: "上にお名前を入力すると、公開のGitHub Issue（透明性のある応募券）を用意します。",
+    step1Body: "ブースでお名前を入力します。ログインや連絡先の入力は必要ありません。",
     step2Title: "カプセルにする",
-    step2Body: "GitHubでIssueを作成します。更新すると、あなたの名前がマシンの中に現れます。",
+    step2Body: "応募はこの端末にすぐ保存され、そのままマシンの中に入ります。",
     step3Title: "抽選する",
-    step3Body: "プレゼントの時間にホストがデジタルノブを回し、マシンがランダムにお名前を選びます。",
+    step3Body: "プレゼントの時間にホストがデジタルノブを回し、保存したお名前からランダムに選びます。",
     roastIntro: "ただのイベントコーヒーじゃない",
     roastTitle: "ジェームズが焙煎。\n笑顔でプレゼント。",
     roastBody: "ロゴを貼っただけのノベルティではありません。AIで次の未来を作る皆さんのために、ジェームズ自身が焙煎しました。",
@@ -125,18 +134,18 @@ const translations = {
     prizeLabel: "賞品",
     prizeValue: "焙煎したてのコーヒー",
     footerTagline: "コード。コーヒー。カプセル。",
-    footerBuilt: "GitHub Pages + GitHub IssuesでAI Dev Dayのために制作。",
+    footerBuilt: "GitHub PagesでAI Dev Dayのために制作。応募はこのブース端末内に保存されます。",
     viewSource: "ソースを見る",
     closeHost: "ホスト画面を閉じる",
     hostConsole: "JAMES CAFE · ホスト画面",
     hostTitle: "ノブを回そう",
-    hostDescription: "このブラウザに読み込んだGitHubエントリーからローカルで当選者を選びます。リセットするまで当選済みの方は除外されます。",
+    hostDescription: "このブース端末に保存した応募からローカルで当選者を選びます。リセットするまで当選済みの方は除外されます。",
     readyLabel: "抽選準備OK",
-    readyMeta: "エントリーを読み込んで、コーヒーマジックを始めよう。",
-    noEntriesMeta: "有効なエントリーがまだ読み込まれていません。",
+    readyMeta: "応募を追加して、コーヒーマジックを始めよう。",
+    noEntriesMeta: "保存された応募はまだありません。",
     exhaustedMeta: "全員が当選しました。履歴をリセットすると再抽選できます。",
     drawingLabel: "カプセルを混ぜています",
-    drawingMeta: "読み込んだエントリーをランダムに選択中…",
+    drawingMeta: "保存した応募からランダムに選択中…",
     winnerLabel: "当選者が決まりました",
     winnerMeta: "焙煎したてのコーヒーをお楽しみください。",
     drawButton: "当選者を選ぶ",
@@ -145,20 +154,25 @@ const translations = {
     historyTitle: "当選履歴",
     resetDraw: "リセット",
     historyEmpty: "この端末ではまだ抽選していません。",
-    hostNote: "ホスト操作はローカルのみです。GitHub Issueの編集、クローズ、ラベル付けは行いません。",
+    entryToolsTitle: "応募のバックアップ",
+    exportEntries: "CSVを書き出す",
+    clearEntries: "応募を全削除",
+    confirmClear: "本当に全削除",
+    exportEmpty: "書き出す前に応募を1件以上追加してください。",
+    exportDone: "応募のバックアップをダウンロードしました",
+    entriesCleared: "すべての応募と当選履歴を削除しました",
+    hostNote: "応募と当選履歴はこのブラウザだけに保存されます。ブラウザデータの削除や端末の変更前にCSVを書き出してください。",
     resetDone: "当選履歴をリセットしました",
-    entriesRefreshed: "カプセルを更新しました"
+    entrySaved: "カプセルを保存しました"
   }
 };
 
-const repo = document.querySelector('meta[name="github-repo"]').content;
 const elements = {
   form: document.querySelector("#entry-form"),
   name: document.querySelector("#entrant-name"),
   nameError: document.querySelector("#name-error"),
   entryConfirm: document.querySelector("#entry-confirm"),
-  refreshEntries: document.querySelector("#refresh-entries"),
-  statusRefresh: document.querySelector("#status-refresh"),
+  addAnother: document.querySelector("#add-another"),
   status: document.querySelector("#machine-status"),
   statusLight: document.querySelector("#status-light"),
   count: document.querySelector("#entry-count"),
@@ -173,17 +187,32 @@ const elements = {
   copyWinner: document.querySelector("#copy-winner"),
   resetDraw: document.querySelector("#reset-draw"),
   historyList: document.querySelector("#winner-history-list"),
+  exportEntries: document.querySelector("#export-entries"),
+  clearEntries: document.querySelector("#clear-entries"),
   winnerCapsule: document.querySelector("#winner-capsule"),
   toast: document.querySelector("#toast")
 };
 
 const state = {
-  entries: [],
+  entries: readStoredArray(ENTRY_STORAGE_KEY, isValidEntry),
   language: localStorage.getItem("james-cafe-language") || (navigator.language.startsWith("ja") ? "ja" : "en"),
-  winnerHistory: readHistory(),
+  winnerHistory: readStoredArray(WINNER_STORAGE_KEY, isValidEntry),
   currentWinner: null,
-  loading: false
+  clearArmed: false
 };
+
+function isValidEntry(item) {
+  return item && (typeof item.id === "string" || Number.isFinite(item.id)) && normalizeName(item.name).length >= 2;
+}
+
+function readStoredArray(key, validator) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(validator) : [];
+  } catch {
+    return [];
+  }
+}
 
 function t(key, values = {}) {
   let value = translations[state.language][key] ?? translations.en[key] ?? key;
@@ -210,71 +239,35 @@ function applyLanguage() {
     button.setAttribute("aria-pressed", String(button.dataset.language === state.language));
   });
 
-  if (!state.loading) updateMachineStatus();
+  updateMachineStatus();
   renderHistory();
   updateDrawAvailability();
+  resetClearConfirmation();
 }
 
-function readHistory() {
+function saveEntries() {
   try {
-    const parsed = JSON.parse(localStorage.getItem("james-cafe-winners") || "[]");
-    return Array.isArray(parsed) ? parsed.filter((item) => item && Number.isFinite(item.id) && item.name) : [];
+    localStorage.setItem(ENTRY_STORAGE_KEY, JSON.stringify(state.entries));
+    return true;
   } catch {
-    return [];
+    return false;
   }
 }
 
 function saveHistory() {
-  localStorage.setItem("james-cafe-winners", JSON.stringify(state.winnerHistory));
-}
-
-async function fetchEntries() {
-  if (state.loading) return;
-  state.loading = true;
-  elements.statusRefresh.classList.add("loading");
-  elements.statusLight.className = "status-light";
-  elements.status.textContent = t("statusLoading");
-
-  try {
-    const issues = [];
-    for (let page = 1; page <= 5; page += 1) {
-      const response = await fetch(`https://api.github.com/repos/${repo}/issues?state=all&per_page=100&page=${page}`, {
-        headers: { Accept: "application/vnd.github+json" }
-      });
-      if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
-      const batch = await response.json();
-      issues.push(...batch);
-      if (batch.length < 100) break;
-    }
-
-    state.entries = dedupeEntries(issues.map(parseEntry).filter(Boolean));
-    renderCapsules();
-    elements.statusLight.className = "status-light ready";
-  } catch (error) {
-    console.error(error);
-    state.entries = [];
-    renderCapsules();
-    elements.statusLight.className = "status-light error";
-    elements.status.textContent = t("statusError");
-  } finally {
-    state.loading = false;
-    elements.statusRefresh.classList.remove("loading");
-    if (!elements.statusLight.classList.contains("error")) updateMachineStatus();
-    updateDrawAvailability();
-  }
+  localStorage.setItem(WINNER_STORAGE_KEY, JSON.stringify(state.winnerHistory));
 }
 
 function updateMachineStatus() {
   const count = state.entries.length;
   elements.count.textContent = count.toLocaleString(state.language);
-  if (count === 0) {
-    elements.status.textContent = t("statusEmpty");
-    return;
-  }
-  elements.status.textContent = t("statusReady", {
-    count: count.toLocaleString(state.language),
-    entryWord: count === 1 ? t("entrySingular") : t("entryPlural")
-  });
+  elements.statusLight.className = `status-light${count ? " ready" : ""}`;
+  elements.status.textContent = count
+    ? t("statusReady", {
+        count: count.toLocaleString(state.language),
+        entryWord: count === 1 ? t("entrySingular") : t("entryPlural")
+      })
+    : t("statusEmpty");
 }
 
 function renderCapsules() {
@@ -303,6 +296,8 @@ function renderCapsules() {
 function updateDrawAvailability() {
   const available = availableEntries(state.entries, state.winnerHistory);
   elements.drawButton.disabled = available.length === 0;
+  elements.exportEntries.disabled = state.entries.length === 0;
+  elements.clearEntries.disabled = state.entries.length === 0;
 
   if (state.currentWinner) return;
   if (state.entries.length === 0) {
@@ -329,6 +324,33 @@ function renderHistory() {
     item.textContent = winner.name;
     elements.historyList.append(item);
   });
+}
+
+function addEntry(name) {
+  if (hasEntryName(state.entries, name)) {
+    elements.name.setAttribute("aria-invalid", "true");
+    elements.nameError.textContent = t("nameDuplicate");
+    elements.name.focus();
+    return;
+  }
+
+  const entry = createLocalEntry(name);
+  state.entries.push(entry);
+  if (!saveEntries()) {
+    state.entries.pop();
+    elements.name.setAttribute("aria-invalid", "true");
+    elements.nameError.textContent = t("storageError");
+    return;
+  }
+
+  elements.name.removeAttribute("aria-invalid");
+  elements.nameError.textContent = "";
+  elements.name.value = "";
+  elements.entryConfirm.hidden = false;
+  renderCapsules();
+  updateMachineStatus();
+  updateDrawAvailability();
+  showToast(t("entrySaved"));
 }
 
 async function drawWinner() {
@@ -393,6 +415,59 @@ async function copyWinner() {
   }
 }
 
+function exportEntries() {
+  if (!state.entries.length) {
+    showToast(t("exportEmpty"));
+    return;
+  }
+
+  const blob = new Blob([entriesToCsv(state.entries)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `james-cafe-entries-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast(t("exportDone"));
+}
+
+function requestClearEntries() {
+  if (!state.clearArmed) {
+    state.clearArmed = true;
+    elements.clearEntries.textContent = t("confirmClear");
+    elements.clearEntries.classList.add("armed");
+    clearTimeout(requestClearEntries.timeout);
+    requestClearEntries.timeout = setTimeout(resetClearConfirmation, 5000);
+    return;
+  }
+
+  state.entries = [];
+  state.winnerHistory = [];
+  state.currentWinner = null;
+  localStorage.removeItem(ENTRY_STORAGE_KEY);
+  localStorage.removeItem(WINNER_STORAGE_KEY);
+  elements.entryConfirm.hidden = true;
+  elements.winnerName.textContent = "—";
+  elements.copyWinner.disabled = true;
+  elements.drawDisplay.querySelector("p").textContent = t("readyLabel");
+  elements.drawDisplay.classList.remove("winner", "drawing");
+  renderCapsules();
+  renderHistory();
+  updateMachineStatus();
+  updateDrawAvailability();
+  resetClearConfirmation();
+  showToast(t("entriesCleared"));
+}
+
+function resetClearConfirmation() {
+  state.clearArmed = false;
+  if (!elements.clearEntries) return;
+  elements.clearEntries.textContent = t("clearEntries");
+  elements.clearEntries.classList.remove("armed");
+}
+
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.hidden = false;
@@ -408,44 +483,40 @@ function wait(duration) {
 
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
-  const name = elements.name.value.trim().replace(/\s+/g, " ");
+  const name = normalizeName(elements.name.value);
   if (name.length < 2) {
     elements.name.setAttribute("aria-invalid", "true");
     elements.nameError.textContent = t("nameTooShort");
     elements.name.focus();
     return;
   }
-
-  elements.name.removeAttribute("aria-invalid");
-  elements.nameError.textContent = "";
-  elements.entryConfirm.hidden = false;
-  sessionStorage.setItem("james-cafe-pending-entry", name);
-  window.open(makeIssueUrl(repo, name), "_blank", "noopener,noreferrer");
+  addEntry(name);
 });
 
 elements.name.addEventListener("blur", () => {
-  if (elements.name.value && elements.name.value.trim().length < 2) {
+  if (elements.name.value && normalizeName(elements.name.value).length < 2) {
     elements.name.setAttribute("aria-invalid", "true");
     elements.nameError.textContent = t("nameTooShort");
   }
 });
 
 elements.name.addEventListener("input", () => {
-  if (elements.name.value.trim().length >= 2) {
+  if (normalizeName(elements.name.value).length >= 2) {
     elements.name.removeAttribute("aria-invalid");
     elements.nameError.textContent = "";
   }
 });
 
-elements.refreshEntries.addEventListener("click", async () => {
-  await fetchEntries();
-  showToast(t("entriesRefreshed"));
+elements.addAnother.addEventListener("click", () => {
+  elements.entryConfirm.hidden = true;
+  elements.name.focus();
 });
-elements.statusRefresh.addEventListener("click", fetchEntries);
 elements.hostTrigger.addEventListener("click", () => elements.hostDialog.showModal());
 elements.drawButton.addEventListener("click", drawWinner);
 elements.copyWinner.addEventListener("click", copyWinner);
 elements.resetDraw.addEventListener("click", resetDraw);
+elements.exportEntries.addEventListener("click", exportEntries);
+elements.clearEntries.addEventListener("click", requestClearEntries);
 
 document.querySelectorAll("[data-language]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -455,12 +526,14 @@ document.querySelectorAll("[data-language]").forEach((button) => {
   });
 });
 
-window.addEventListener("focus", () => {
-  if (sessionStorage.getItem("james-cafe-pending-entry")) {
-    fetchEntries();
+window.addEventListener("storage", (event) => {
+  if (event.key === ENTRY_STORAGE_KEY) {
+    state.entries = readStoredArray(ENTRY_STORAGE_KEY, isValidEntry);
+    renderCapsules();
+    updateMachineStatus();
+    updateDrawAvailability();
   }
 });
 
 applyLanguage();
 renderCapsules();
-fetchEntries();
